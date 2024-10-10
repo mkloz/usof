@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+generator dbml {
+    provider = "prisma-dbml-generator"
+    output   = "./generated/dbml"
+}
+
+// generator prismaClassGenerator {
+//     provider = "prisma-class-generator"
+//     output   = "./generated/prisma-class"
+// }
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+    ADMIN
+    USER
+}
+
+model User {
+    id            Int       @id @default(autoincrement())
+    email         String    @unique
+    fullName      String    @map("full_name")
+    passwordHash  String    @map("password_hash")
+    emailVerified Boolean   @default(false) @map("email_verified")
+    rating        Int?      @default(0)
+    role          UserRole  @default(USER)
+    avatarId      Int?      @unique @map("avatar_id")
+    createdAt     DateTime  @default(now()) @map("created_at")
+    updatedAt     DateTime  @updatedAt @map("updated_at")
+    avatar        File?     @relation(fields: [avatarId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    ratings       Rating[]
+    posts         Post[]
+    comments      Comment[]
+    OTP           Otp[]
+
+    @@map("user")
+}
+
+enum OtpType {
+    EMAIL_VERIFICATION
+    PASSWORD_RESET
+}
+
+model Otp {
+    id         Int       @id @default(autoincrement())
+    userId     Int       @map("user_id")
+    code       String
+    type       OtpType   @default(EMAIL_VERIFICATION)
+    createdAt  DateTime  @default(now()) @map("created_at")
+    activeTill DateTime? @map("active_till")
+    user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+    @@map("otp")
+}
+
+model File {
+    id          Int           @id @default(autoincrement())
+    name        String        @unique
+    url         String?
+    createdAt   DateTime      @default(now()) @map("created_at")
+    postPicture PostPicture[]
+    user        User?
+
+    @@map("file")
+}
+
+enum RatingType {
+    LIKE
+    DISLIKE
+}
+
+// model PostRating {
+//     id       Int    @id @default(autoincrement())
+//     postId   Int    @map("post_id")
+//     ratingId Int    @unique @map("rating_id")
+//     rating   Rating @relation(fields: [ratingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+//     post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+//     @@unique([postId, ratingId])
+//     @@map("post_rating")
+// }
+
+// model CommentRating {
+//     id        Int     @id @default(autoincrement())
+//     commentId Int     @map("comment_id")
+//     ratingId  Int     @unique @map("rating_id")
+//     rating    Rating  @relation(fields: [ratingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+//     comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+//     @@unique([commentId, ratingId])
+//     @@map("comment_rating")
+// }
+
+model Rating {
+    id        Int        @id @default(autoincrement())
+    userId    Int        @map("user_id")
+    type      RatingType @default(LIKE)
+    createdAt DateTime   @default(now()) @map("created_at")
+    postId    Int?       @map("post_id")
+    commentId Int?       @map("comment_id")
+    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    post      Post?      @relation(fields: [postId], references: [id])
+    comment   Comment?   @relation(fields: [commentId], references: [id])
+
+    @@unique([userId, postId])
+    @@unique([userId, commentId])
+    @@map("rating")
+}
+
+enum PostStatus {
+    ACTIVE
+    SUSPENDED
+    INACTIVE
+}
+
+model Post {
+    id         Int           @id @default(autoincrement())
+    title      String
+    content    String
+    createdAt  DateTime      @default(now()) @map("created_at")
+    updatedAt  DateTime      @updatedAt @map("updated_at")
+    status     PostStatus    @default(ACTIVE)
+    authorId   Int?          @map("author_id")
+    rating     Int?          @default(0)
+    ratings    Rating[]
+    comments   Comment[]
+    pictures   PostPicture[]
+    author     User?         @relation(fields: [authorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    categories Category[]    @relation("_post_category")
+
+    @@map("post")
+}
+
+model PostPicture {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now()) @map("created_at")
+    postId    Int      @map("post_id")
+    fileId    Int      @map("file_id")
+    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+    @@map("post_picture")
+}
+
+model Category {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+    posts       Post[]   @relation("_post_category")
+
+    @@map("category")
+}
+
+model Comment {
+    id        Int      @id @default(autoincrement())
+    content   String
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+    userId    Int      @map("user_id")
+    postId    Int      @map("post_id")
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    ratings   Rating[]
+    rating    Int?     @default(0)
+
+    @@map("comment")
+}

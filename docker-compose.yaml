@@ -1,0 +1,60 @@
+services:
+  usof-db:
+    container_name: usof-db
+    image: mysql:8.0
+    env_file:
+      - .env
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    restart: always
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '0.0.0.0', '--silent']
+      interval: 10s
+      retries: 10
+      start_period: 10s
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASS}
+      - MYSQL_TCP_PORT=${DB_PORT}
+      - MYSQL_DATABASE=${DB_NAME}
+    volumes:
+      - usof_volume:/var/lib/mysql
+    networks:
+      - usof_network
+  usof:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: usof
+    container_name: usof
+    command: sh -c "npm run migrate && npm run seed && npm run start"
+    env_file:
+      - .env
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://usof:${PORT:-3000}/api/health']
+      interval: 10s
+      retries: 10
+      start_period: 10s
+    environment:
+      - PORT=${PORT:-3000}
+      - DB_HOST=mysql
+      - DATABASE_URL=mysql://${DB_USER}:${DB_PASS}@mysql:${DB_PORT}/${DB_NAME}
+    depends_on:
+      usof-db:
+        condition: service_healthy
+    restart: always
+    networks:
+      - usof_network
+    links:
+      - usof-db
+    ports:
+      - ${PORT:-3000}:${PORT:-3000}
+
+volumes:
+  usof_volume:
+    name: usof_volume
+    driver: local
+
+networks:
+  usof_network:
+    name: usof_network
+    driver: bridge
