@@ -1,26 +1,10 @@
-import { PostPicture as IPostPicture, PostStatus } from '@prisma/client';
+import { PostStatus } from '@prisma/client';
 import { Post as IPost } from '@prisma/client';
 import { Comment } from '../comment/comment.entity';
 import { User } from '../user/user.entity';
 import { Category } from '../category/category.entity';
 import { File } from '../file/file.entity';
 
-export class PostPicture implements IPostPicture {
-  id: number;
-  postId: number;
-  fileId: number;
-  createdAt: Date;
-
-  file?: File;
-
-  constructor(data: Partial<PostPicture>) {
-    Object.assign(this, data);
-
-    if (this.file) {
-      this.file = new File(this.file);
-    }
-  }
-}
 export class Post implements IPost {
   id: number;
   title: string;
@@ -34,7 +18,7 @@ export class Post implements IPost {
   author?: User | null;
   comments?: Comment[];
   categories?: Category[];
-  pictures?: PostPicture[];
+  pictures?: File[];
 
   constructor(data: Partial<Post>) {
     Object.assign(this, data);
@@ -55,7 +39,7 @@ export class Post implements IPost {
 
     if (this.pictures?.length) {
       this.pictures = data.pictures?.map((picture) => {
-        return new PostPicture(picture);
+        return new File(picture);
       });
     }
   }

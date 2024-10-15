@@ -1,5 +1,5 @@
 import { User } from './user.entity';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, Rating } from '@prisma/client';
 import { prisma } from '../db/prisma.client';
 import {
   InternalServerErrorException,
@@ -145,6 +145,11 @@ export class UserService {
     await this.prisma.user.update({
       where: { email },
       data: { emailVerified: true },
+    });
+  }
+  async getLikes(userId: number): Promise<Rating[]> {
+    return this.prisma.rating.findMany({
+      where: { userId },
     });
   }
 }

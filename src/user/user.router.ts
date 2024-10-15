@@ -7,6 +7,7 @@ export const userRouter = Router();
 
 userRouter
   .get('/users/me', auth, UserController.get)
+  .get('/users/me/likes', auth, UserController.getLikes)
   .patch('/users/me', auth, UserController.update)
   .delete('/users/me', auth, UserController.delete)
   .get('/users/:id/posts', userExist, UserController.getPosts)

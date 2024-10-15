@@ -1,5 +1,11 @@
 import { Post } from './post.entity';
-import { Prisma, PrismaClient, Rating, RatingType } from '@prisma/client';
+import {
+  PostStatus,
+  Prisma,
+  PrismaClient,
+  Rating,
+  RatingType,
+} from '@prisma/client';
 import {
   Paginated,
   PaginationOptionsDto,
@@ -25,6 +31,7 @@ class PostRating {
 export class PostService {
   static readonly include: Prisma.PostInclude = {
     author: true,
+    pictures: true,
   };
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -36,12 +43,15 @@ export class PostService {
         categories: pag.categoryId
           ? { some: { id: pag.categoryId } }
           : undefined,
-        status: pag.status,
+        status: pag.status ?? {
+          in: [PostStatus.ARCHIVED, PostStatus.PUBLISHED],
+        },
         authorId: pag.userId,
         createdAt: {
           gte: pag.fromDate,
           lte: pag.tillDate,
         },
+
         OR: pag.search
           ? [
               { title: { contains: pag.search } },

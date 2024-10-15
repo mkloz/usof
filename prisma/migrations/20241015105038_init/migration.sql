@@ -60,19 +60,9 @@ CREATE TABLE `post` (
     `content` VARCHAR(191) NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
-    `status` ENUM('ACTIVE', 'SUSPENDED', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    `status` ENUM('DRAFT', 'PUBLISHED', 'ARCHIVED', 'PRIVATE') NOT NULL DEFAULT 'PUBLISHED',
     `author_id` INTEGER NULL,
     `rating` INTEGER NULL DEFAULT 0,
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `post_picture` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `post_id` INTEGER NOT NULL,
-    `file_id` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -99,6 +89,15 @@ CREATE TABLE `comment` (
     `rating` INTEGER NULL DEFAULT 0,
 
     PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `__post_picture` (
+    `A` INTEGER NOT NULL,
+    `B` INTEGER NOT NULL,
+
+    UNIQUE INDEX `__post_picture_AB_unique`(`A`, `B`),
+    INDEX `__post_picture_B_index`(`B`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -129,23 +128,22 @@ ALTER TABLE `rating` ADD CONSTRAINT `rating_comment_id_fkey` FOREIGN KEY (`comme
 ALTER TABLE `post` ADD CONSTRAINT `post_author_id_fkey` FOREIGN KEY (`author_id`) REFERENCES `user`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `post_picture` ADD CONSTRAINT `post_picture_post_id_fkey` FOREIGN KEY (`post_id`) REFERENCES `post`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `post_picture` ADD CONSTRAINT `post_picture_file_id_fkey` FOREIGN KEY (`file_id`) REFERENCES `file`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE `comment` ADD CONSTRAINT `comment_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `comment` ADD CONSTRAINT `comment_post_id_fkey` FOREIGN KEY (`post_id`) REFERENCES `post`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `__post_picture` ADD CONSTRAINT `__post_picture_A_fkey` FOREIGN KEY (`A`) REFERENCES `file`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `__post_picture` ADD CONSTRAINT `__post_picture_B_fkey` FOREIGN KEY (`B`) REFERENCES `post`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `__post_category` ADD CONSTRAINT `__post_category_A_fkey` FOREIGN KEY (`A`) REFERENCES `category`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `__post_category` ADD CONSTRAINT `__post_category_B_fkey` FOREIGN KEY (`B`) REFERENCES `post`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
 CREATE TRIGGER update_post_rating_after_insert
 AFTER INSERT ON rating
 FOR EACH ROW

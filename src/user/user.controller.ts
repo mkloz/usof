@@ -34,7 +34,12 @@ export class UserController {
 
     res.status(StatusCodes.OK).json(comments);
   }
+  public static async getLikes(req: Request, res: Response) {
+    const { userId } = parseAuthToken(req);
+    const likes = await userService.getLikes(userId);
 
+    res.status(StatusCodes.OK).json(likes);
+  }
   public static async update(req: Request, res: Response) {
     const { userId } = parseAuthToken(req);
     const data = UpdateUserDtoValidator.parse(req.body);

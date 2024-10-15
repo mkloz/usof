@@ -63,12 +63,12 @@ model Otp {
 }
 
 model File {
-    id          Int           @id @default(autoincrement())
-    name        String        @unique
-    url         String?
-    createdAt   DateTime      @default(now()) @map("created_at")
-    postPicture PostPicture[]
-    user        User?
+    id        Int      @id @default(autoincrement())
+    name      String   @unique
+    url       String?
+    createdAt DateTime @default(now()) @map("created_at")
+    posts     Post[]   @relation("_post_picture")
+    user      User?
 
     @@map("file")
 }
@@ -77,28 +77,6 @@ enum RatingType {
     LIKE
     DISLIKE
 }
-
-// model PostRating {
-//     id       Int    @id @default(autoincrement())
-//     postId   Int    @map("post_id")
-//     ratingId Int    @unique @map("rating_id")
-//     rating   Rating @relation(fields: [ratingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-//     post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-//     @@unique([postId, ratingId])
-//     @@map("post_rating")
-// }
-
-// model CommentRating {
-//     id        Int     @id @default(autoincrement())
-//     commentId Int     @map("comment_id")
-//     ratingId  Int     @unique @map("rating_id")
-//     rating    Rating  @relation(fields: [ratingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-//     comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-//     @@unique([commentId, ratingId])
-//     @@map("comment_rating")
-// }
 
 model Rating {
     id        Int        @id @default(autoincrement())
@@ -117,38 +95,28 @@ model Rating {
 }
 
 enum PostStatus {
-    ACTIVE
-    SUSPENDED
-    INACTIVE
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+    PRIVATE
 }
 
 model Post {
-    id         Int           @id @default(autoincrement())
+    id         Int        @id @default(autoincrement())
     title      String
     content    String
-    createdAt  DateTime      @default(now()) @map("created_at")
-    updatedAt  DateTime      @updatedAt @map("updated_at")
-    status     PostStatus    @default(ACTIVE)
-    authorId   Int?          @map("author_id")
-    rating     Int?          @default(0)
+    createdAt  DateTime   @default(now()) @map("created_at")
+    updatedAt  DateTime   @updatedAt @map("updated_at")
+    status     PostStatus @default(PUBLISHED)
+    authorId   Int?       @map("author_id")
+    rating     Int?       @default(0)
     ratings    Rating[]
     comments   Comment[]
-    pictures   PostPicture[]
-    author     User?         @relation(fields: [authorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-    categories Category[]    @relation("_post_category")
+    pictures   File[]     @relation("_post_picture")
+    author     User?      @relation(fields: [authorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    categories Category[] @relation("_post_category")
 
     @@map("post")
-}
-
-model PostPicture {
-    id        Int      @id @default(autoincrement())
-    createdAt DateTime @default(now()) @map("created_at")
-    postId    Int      @map("post_id")
-    fileId    Int      @map("file_id")
-    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-    @@map("post_picture")
 }
 
 model Category {

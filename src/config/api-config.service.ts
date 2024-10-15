@@ -92,6 +92,7 @@ export class ApiConfigService {
   public getDB(): IMysqlConfig {
     return this.config.database;
   }
+
   public getAWS(): IAWS {
     return this.config.aws;
   }

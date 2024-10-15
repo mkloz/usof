@@ -13,6 +13,6 @@ const upload = multer({
 });
 
 fileRouter
-  .post('/files', upload.single(FILE_KEY), () => {})
+  .post('/files', upload.single(FILE_KEY), FileController.create)
   .get('/files/:id', fileExist, FileController.get)
   .delete('/files/:id', fileExist, FileController.delete);

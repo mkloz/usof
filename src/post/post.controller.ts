@@ -14,6 +14,7 @@ import { parseAuthToken } from '../auth/middlewares/auth.middleware';
 import { CreateCommentDtoValidator } from '../comment/comment.dto';
 import { commentService } from '../comment/comment.service';
 import { BadRequestException } from '../utils/exceptions/exceptions';
+import { PostStatus } from '@prisma/client';
 
 export class PostController {
   public static async get(req: Request, res: Response) {
@@ -37,7 +38,7 @@ export class PostController {
     const { id } = IdDtoValidator.parse(req.params);
     const post = await postService.get(id);
 
-    if (!post || post.status === 'INACTIVE') {
+    if (!post || post.status !== PostStatus.PUBLISHED) {
       throw new BadRequestException("Post doesn't exist or is inactive");
     }
     const comment = await commentService.create(userId, id, data);
