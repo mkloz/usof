@@ -23,3 +23,8 @@ export const UpdateUserDtoValidator = z.object({
   avatarId: z.number().int().positive().optional().nullable(),
 });
 export type UpdateUserDto = z.infer<typeof UpdateUserDtoValidator>;
+
+export const MakePostFavoriteDtoValidator = z.object({
+  postId: z.number().int().positive(),
+});
+export type MakePostFavoriteDto = z.infer<typeof MakePostFavoriteDtoValidator>;

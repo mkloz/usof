@@ -14,6 +14,7 @@ import {
 } from '../shared/pagination';
 import { Post } from '../post/post.entity';
 import { Comment } from '../comment/comment.entity';
+import { PostService } from '../post/post.service';
 
 export class UserService {
   readonly include: Prisma.UserInclude = {
@@ -60,6 +61,13 @@ export class UserService {
       limit: pag.limit,
       route: url,
       count: await this.prisma.comment.count({ where: { userId } }),
+    });
+  }
+
+  async getFavorites(userId: number): Promise<Post[]> {
+    return this.prisma.post.findMany({
+      where: { favorites: { some: { id: userId } } },
+      include: PostService.include,
     });
   }
 
@@ -151,6 +159,34 @@ export class UserService {
     return this.prisma.rating.findMany({
       where: { userId },
     });
+  }
+
+  async addFavorite(userId: number, postId: number): Promise<Post> {
+    const post = await this.prisma.post.update({
+      where: { id: postId },
+      include: PostService.include,
+      data: { favorites: { connect: { id: userId } } },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post does not exist.');
+    }
+
+    return new Post(post);
+  }
+
+  async removeFavorite(userId: number, postId: number): Promise<Post> {
+    const post = await this.prisma.post.update({
+      where: { id: postId },
+      include: PostService.include,
+      data: { favorites: { disconnect: { id: userId } } },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post does not exist.');
+    }
+
+    return new Post(post);
   }
 }
 

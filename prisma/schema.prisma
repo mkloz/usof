@@ -41,6 +41,7 @@ model User {
     posts         Post[]
     comments      Comment[]
     OTP           Otp[]
+    favorites     Post[]    @relation("_post_favorites")
 
     @@map("user")
 }
@@ -115,6 +116,7 @@ model Post {
     pictures   File[]     @relation("_post_picture")
     author     User?      @relation(fields: [authorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
     categories Category[] @relation("_post_category")
+    favorites  User[]     @relation("_post_favorites")
 
     @@map("post")
 }
