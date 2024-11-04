@@ -1,3 +1,5 @@
+import 'module-alias/register';
+import 'reflect-metadata';
 import { UsofServer } from './app';
 import { cs } from './config/api-config.service';
 import { startupLogger } from './shared/loggers/logger';

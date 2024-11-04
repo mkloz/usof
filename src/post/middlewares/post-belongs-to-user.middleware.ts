@@ -1,13 +1,13 @@
-import { NextFunction, Request, Response } from 'express';
-import { postService } from '../post.service';
-import { IdDtoValidator } from '../../shared/validators/common.validator';
+import { parseAuthToken } from '@/auth/middlewares/admin.middleware';
 import {
   NotFoundException,
   UnprocessableEntityException,
-} from '../../utils/exceptions/exceptions';
-import { parseAuthToken } from '../../auth/middlewares/admin.middleware';
+} from '@/shared/exceptions/exceptions';
+import { IdDtoValidator } from '@/shared/validators/common.validator';
+import { NextFunction, Request, Response } from 'express';
+import { postService } from '../post.service';
 
-export default async function postBelongsToUser(
+export default async function usersPost(
   req: Request,
   _: Response,
   next: NextFunction,

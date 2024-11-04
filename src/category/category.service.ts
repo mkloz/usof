@@ -1,85 +1,71 @@
-import { Category } from './category.entity';
-import { PrismaClient } from '@prisma/client';
-import {
-  Paginated,
-  PaginationOptionsDto,
-  Paginator,
-} from '../shared/pagination';
-import { prisma } from '../db/prisma.client';
+import { prisma } from '@/db/prisma.client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import {
   InternalServerErrorException,
   NotFoundException,
-} from '../utils/exceptions/exceptions';
-import { CreateCategoryDto, UpdateCategoryDto } from './category.dto';
-import { Post } from '../post/post.entity';
+} from '../shared/exceptions/exceptions';
+import { Paginated } from '../shared/pagination';
+import {
+  CreateCategoryDto,
+  GetManyCategoryDto,
+  UpdateCategoryDto,
+} from './category.dto';
+import { Category, PaginatedCategories } from './category.entity';
 
 export class CategoryService {
+  static include: Prisma.CategoryInclude = {
+    _count: {
+      select: { posts: true },
+    },
+  };
   constructor(private readonly prisma: PrismaClient) {}
-
-  async getMany(
-    pag: PaginationOptionsDto,
-    url: string,
-  ): Promise<Paginated<Category>> {
-    const tasks = await this.prisma.comment.findMany({
+  private getManyQuery(pag: GetManyCategoryDto): Prisma.CategoryFindManyArgs {
+    return {
       take: pag.limit,
       skip: (pag.page - 1) * pag.limit,
-    });
-
-    return Paginator.paginate({
-      data: tasks.map((task) => new Category(task)),
-      page: pag.page,
-      limit: pag.limit,
-      route: url,
-      count: await this.prisma.comment.count(),
-    });
+      where: pag.search
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: pag.search,
+                },
+              },
+              {
+                description: {
+                  contains: pag.search,
+                },
+              },
+            ],
+          }
+        : undefined,
+      include: CategoryService.include,
+    };
   }
 
-  async getPosts(
-    categoryId: number,
-    pag: PaginationOptionsDto,
-    url: string,
-  ): Promise<Paginated<Post>> {
-    const posts = await this.prisma.post.findMany({
-      where: { categories: { some: { id: categoryId } } },
-      take: pag.limit,
-      skip: (pag.page - 1) * pag.limit,
-    });
-
-    return Paginator.paginate({
-      data: posts.map((task) => new Post(task)),
-      page: pag.page,
-      limit: pag.limit,
-      route: url,
-      count: await this.prisma.post.count({
-        where: { categories: { some: { id: categoryId } } },
-      }),
-    });
-  }
-  async getManyFromPost(
-    postId: number,
-    pag: PaginationOptionsDto,
+  async getPaginated(
+    { page, limit, ...pag }: GetManyCategoryDto,
     url: string,
   ): Promise<Paginated<Category>> {
-    const categories = await this.prisma.category.findMany({
-      where: { posts: { some: { id: postId } } },
-      take: pag.limit,
-      skip: (pag.page - 1) * pag.limit,
-    });
+    const query = this.getManyQuery({ page, limit, ...pag });
+    const categories = await this.prisma.category.findMany(query);
 
-    return Paginator.paginate({
-      data: categories.map((task) => new Category(task)),
-      page: pag.page,
-      limit: pag.limit,
-      route: url,
-      count: await this.prisma.category.count({
-        where: { posts: { some: { id: postId } } },
-      }),
-    });
+    return new PaginatedCategories(
+      {
+        data: categories,
+        page: page,
+        limit: limit,
+        route: url,
+        count: await this.prisma.category.count({ where: query.where }),
+      },
+      pag,
+    );
   }
 
   async update(id: number, dto: UpdateCategoryDto): Promise<Category> {
     const category = await this.prisma.category.update({
       where: { id },
+      include: CategoryService.include,
       data: dto,
     });
 
@@ -91,7 +77,10 @@ export class CategoryService {
   }
 
   async delete(id: number): Promise<Category> {
-    const category = await this.prisma.category.delete({ where: { id } });
+    const category = await this.prisma.category.delete({
+      where: { id },
+      include: CategoryService.include,
+    });
 
     if (!category) {
       throw new NotFoundException('Category does not exist.');
@@ -102,6 +91,7 @@ export class CategoryService {
 
   async create(dto: CreateCategoryDto): Promise<Category> {
     const category = await this.prisma.category.create({
+      include: CategoryService.include,
       data: dto,
     });
 
@@ -113,12 +103,14 @@ export class CategoryService {
   }
 
   async get(id: number): Promise<Category> {
-    const category = await this.prisma.category.findUnique({ where: { id } });
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: CategoryService.include,
+    });
 
     if (!category) {
       throw new NotFoundException('Category does not exist.');
     }
-
     return new Category(category);
   }
 }

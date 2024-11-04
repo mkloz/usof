@@ -2,7 +2,17 @@ openapi: 3.0.0
 
 info:
   title: Usof Backend API
-  description: API documentation for the backend of the reddit like app
+  description: >
+    API documentation for the backend of the Reddit-like app. This API manages users, posts, comments, categories, and files.<br>
+    It also provides authentication and authorization features. The API is secured with JWT tokens. The API is versioned and follows the RESTful principles.<br>
+    The API is built with Node.js, Express.js, and MySQL. The API is documented with OpenAPI 3.0.0.<br><br>
+    About roles. The API has 2 main roles: [USER, ADMIN]  and 3 *pseudo roles: [ME, AUTHOR, ANYONE].<br>
+    USER - a regular user(anyone who is authenticated).<br>
+    ADMIN - an admin user.<br>
+    *ME - the user who is making the request.<br>
+    *AUTHOR - the author of the resource.<br>
+    *ANYONE - any user, including guests.<br>
+
   version: 1.0.0
   license:
     name: MIT
@@ -14,7 +24,7 @@ security: []
 paths:
   /api/v1/users/me:
     get:
-      summary: Get me
+      summary: Get me. Open for [ME]
       operationId: get-me
       security:
         - JWT: []
@@ -26,7 +36,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     patch:
-      summary: Updates a user
+      summary: Updates a user. Open for [ME]
       operationId: update-me
       security:
         - JWT: []
@@ -53,7 +63,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Delete a user by ID
+      summary: Delete me. Open for [ME]
       operationId: delete-user
       security:
         - JWT: []
@@ -64,9 +74,9 @@ paths:
           $ref: '#/components/responses/UserResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-  /api/v1/users/me/likes:
+  /api/v1/users/me/reactions:
     get:
-      summary: Get all likes by user ID
+      summary: Get all likes by user ID. Open for [ME]
       operationId: get-likes-by-user-id
       tags:
         - User
@@ -84,9 +94,193 @@ paths:
                   $ref: '#/components/schemas/Rating'
         '400':
           $ref: '#/components/responses/BadRequest'
+  /api/v1/users/me/favorites:
+    get:
+      summary: Get all favorite posts by user ID. Open for [ME]
+      operationId: get-favorites-by-user-id
+      tags:
+        - User
+        - Post
+      security:
+        - JWT: []
+      responses:
+        '200':
+          description: Favorites response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      summary: Add a post to favorites. Open for [ME]
+      operationId: add-to-favorites
+      tags:
+        - User
+        - Post
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                postId:
+                  $ref: '#/components/schemas/ID'
+              required:
+                - postId
+      responses:
+        '201':
+          description: Post added to favorites. Open for [ME]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/users/me/favorites/{id}:
+    delete:
+      summary: Remove a post from favorites. Open for [ME]
+      operationId: remove-from-favorites
+      tags:
+        - User
+        - Post
+      security:
+        - JWT: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the post to remove from favorites
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '204':
+          description: No content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/users:
+    get:
+      summary: Get all users. Open for [ADMIN]
+      operationId: get-users
+      tags:
+        - User
+        - Admin
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number
+          schema:
+            type: number
+        - name: limit
+          in: query
+          required: false
+          description: Limit of items per page
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Users response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Pagination'
+                  - properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/users/{id}:
+    get:
+      summary: Get a user by ID. Open for [ANYONE]
+      operationId: get-user-by-id
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to get
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      summary: Update a user by ID. Open for [ADMIN]
+      operationId: update-user-by-id
+      security:
+        - JWT: []
+      tags:
+        - User
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to update
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                fullName:
+                  $ref: '#/components/schemas/Name'
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: '#/components/schemas/Password'
+                role:
+                  type: string
+                  enum:
+                    - USER
+                    - ADMIN
+                  example: USER
+              required:
+                - fullName
+                - email
+                - password
+                - role
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    delete:
+      summary: Delete a user by ID. Open for [ADMIN]
+      operationId: delete-user-by-id
+      security:
+        - JWT: []
+      tags:
+        - User
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to delete
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
   /api/v1/users/{id}/posts:
     get:
-      summary: Get all posts by user ID
+      summary: Get all posts by user ID. Open for [ANYONE]
       operationId: get-posts-by-user-id
       tags:
         - Post
@@ -120,9 +314,39 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /api/v1/users/me/posts:
+    get:
+      summary: Get all posts by user ID. Open for [ME]
+      operationId: get-my-posts
+      tags:
+        - Post
+        - User
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number
+          schema:
+            type: number
+        - name: limit
+          in: query
+          required: false
+          description: Limit of items per page
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Posts response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPosts'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/users/{id}/comments:
     get:
-      summary: Get all comments by user ID
+      summary: Get all comments by user ID. Open for [ANYONE]
       operationId: get-comments-by-user-id
       tags:
         - User
@@ -143,7 +367,7 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Pagination'
                   - properties:
-                      data:
+                      items:
                         type: array
                         items:
                           $ref: '#/components/schemas/Comment'
@@ -151,7 +375,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/auth/login:
     post:
-      summary: User login
+      summary: User login. Open for [ANYONE]
       operationId: login
       tags:
         - Auth
@@ -173,7 +397,7 @@ paths:
 
   /api/v1/auth/register:
     post:
-      summary: User registration
+      summary: User registration. Open for [ANYONE]
       operationId: register
       tags:
         - Auth
@@ -200,7 +424,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/auth/refresh:
     post:
-      summary: Refresh JWT tokens
+      summary: Refresh JWT tokens. Open for [ANYONE]
       operationId: refresh
       tags:
         - Auth
@@ -219,7 +443,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/auth/send-verification:
     post:
-      summary: Send email verification
+      summary: Send email verification. Open for [ANYONE]
       operationId: send-verification
       tags:
         - Auth
@@ -239,7 +463,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/auth/verify-email:
     post:
-      summary: Verify email
+      summary: Verify email. Open for [ANYONE]
       operationId: verify-email
       tags:
         - Auth
@@ -262,7 +486,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/auth/forgot-password:
     post:
-      summary: Forgot password
+      summary: Forgot password. Open for [ANYONE]
       operationId: forgot-password
       tags:
         - Auth
@@ -282,7 +506,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/auth/reset-password:
     post:
-      summary: Reset password
+      summary: Reset password. Open for [ANYONE]
       operationId: reset-password
       tags:
         - Auth
@@ -307,7 +531,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/posts:
     get:
-      summary: Get all posts
+      summary: Get all posts. Open for [ANYONE]
       operationId: get-posts
       tags:
         - Post
@@ -394,7 +618,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     post:
-      summary: Create a post
+      summary: Create a post. Open for [USER]
       operationId: create-post
       security:
         - JWT: []
@@ -422,7 +646,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/posts/{id}:
     get:
-      summary: Get a post by ID
+      summary: Get a post by ID. Open for [ANYONE]
       operationId: get-post-by-id
       tags:
         - Post
@@ -444,12 +668,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     patch:
-      summary: Update a post by ID
+      summary: Update a post by ID. Open for [AUTHOR, ADMIN]
       operationId: update-post-by-id
       security:
         - JWT: []
       tags:
         - Post
+        - Admin
       parameters:
         - name: id
           in: path
@@ -478,12 +703,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Delete a post by ID
+      summary: Delete a post by ID. Open for [AUTHOR, ADMIN]
       operationId: delete-post-by-id
       security:
         - JWT: []
       tags:
         - Post
+        - Admin
       parameters:
         - name: id
           in: path
@@ -498,7 +724,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/posts/{id}/comments:
     get:
-      summary: Get all comments by post ID
+      summary: Get all comments by post ID. Open for [ANYONE]
       operationId: get-comments-by-post-id
       tags:
         - Post
@@ -519,14 +745,14 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Pagination'
                   - properties:
-                      data:
+                      items:
                         type: array
                         items:
                           $ref: '#/components/schemas/Comment'
         '400':
           $ref: '#/components/responses/BadRequest'
     post:
-      summary: Create a comment
+      summary: Create a comment. Open for [USER]
       operationId: create-comment
       security:
         - JWT: []
@@ -557,7 +783,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/posts/{id}/categories:
     get:
-      summary: Get all categories by post ID
+      summary: Get all categories by post ID. Open for [ANYONE]
       operationId: get-categories-by-post-id
       tags:
         - Post
@@ -578,15 +804,73 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Pagination'
                   - properties:
-                      data:
+                      items:
                         type: array
                         items:
                           $ref: '#/components/schemas/Category'
         '400':
           $ref: '#/components/responses/BadRequest'
-  /api/v1/posts/{id}/like:
+  /api/v1/posts/{id}/categories/{categoryId}:
     post:
-      summary: Like a post
+      summary: Add a category to a post. Open for [AUTHOR]
+      operationId: add-category-to-post
+      security:
+        - JWT: []
+      tags:
+        - Post
+        - Category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the post to add category
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: categoryId
+          in: path
+          required: true
+          description: ID of the category to add
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '201':
+          description: Category added to post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    delete:
+      summary: Remove a category from a post. Open for [AUTHOR, ADMIN]
+      operationId: remove-category-from-post
+      security:
+        - JWT: []
+      tags:
+        - Post
+        - Category
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the post to remove category
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: categoryId
+          in: path
+          required: true
+          description: ID of the category to remove
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '204':
+          description: No content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/posts/{id}/reactions/my:
+    post:
+      summary: Like a post. Open for [USER]
       operationId: like-post
       security:
         - JWT: []
@@ -620,7 +904,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     get:
-      summary: Get all likes by post ID
+      summary: Get all likes by post ID. Open for [ME]
       operationId: get-likes-by-post-id
       tags:
         - Post
@@ -638,7 +922,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Unlike a post
+      summary: Unlike a post. Open for [ME]
       operationId: unlike-post
       security:
         - JWT: []
@@ -657,9 +941,43 @@ paths:
           description: No content
         '400':
           $ref: '#/components/responses/BadRequest'
+    patch:
+      summary: Update a like by post ID. Open for [ME]
+      operationId: update-like-by-post-id
+      security:
+        - JWT: []
+      tags:
+        - Post
+        - Rating
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the post to update like
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - LIKE
+                    - DISLIKE
+                  example: LIKE
+              required:
+                - type
+      responses:
+        '200':
+          $ref: '#/components/responses/RatingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
   /api/v1/comments:
     get:
-      summary: Get all comments
+      summary: Get all comments. Open for [ANYONE]
       operationId: get-comments
       tags:
         - Comment
@@ -676,6 +994,42 @@ paths:
           description: Limit of items per page
           schema:
             type: number
+        - name: postId
+          in: query
+          required: false
+          description: Post ID
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: userId
+          in: query
+          required: false
+          description: Author ID
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: sortByLikes
+          in: query
+          required: false
+          description: Sort by likes
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+        - name: sortByDate
+          in: query
+          required: false
+          description: Sort by date
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+        - name: parentId
+          in: query
+          required: false
+          description: Parent ID
+          schema:
+            $ref: '#/components/schemas/ID'
       responses:
         '200':
           description: Comments response
@@ -685,7 +1039,7 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Pagination'
                   - properties:
-                      data:
+                      items:
                         type: array
                         items:
                           $ref: '#/components/schemas/Comment'
@@ -693,7 +1047,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/comments/{id}:
     get:
-      summary: Get a comment by ID
+      summary: Get a comment by ID. Open for [ANYONE]
       operationId: get-comment-by-id
       tags:
         - Comment
@@ -710,12 +1064,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     patch:
-      summary: Update a comment by ID
+      summary: Update a comment by ID. Open for [AUTHOR, ADMIN]
       operationId: update-comment-by-id
       security:
         - JWT: []
       tags:
         - Comment
+        - Admin
       parameters:
         - name: id
           in: path
@@ -740,12 +1095,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Delete a comment by ID
+      summary: Delete a comment by ID. Open for [AUTHOR, ADMIN]
       operationId: delete-comment-by-id
       security:
         - JWT: []
       tags:
         - Comment
+        - Admin
       parameters:
         - name: id
           in: path
@@ -758,9 +1114,9 @@ paths:
           $ref: '#/components/responses/CommentResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-  /api/v1/comments/{id}/like:
+  /api/v1/comments/{id}/reactions/my:
     post:
-      summary: Like a comment
+      summary: Like a comment. Open for [ME]
       operationId: like-comment
       security:
         - JWT: []
@@ -793,7 +1149,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     get:
-      summary: Get all likes by comment ID
+      summary: Get all likes by comment ID. Open for [ME]
       operationId: get-likes-by-comment-id
       tags:
         - Comment
@@ -811,7 +1167,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Unlike a comment
+      summary: Unlike a comment. Open for [ME]
       operationId: unlike-comment
       security:
         - JWT: []
@@ -830,23 +1186,59 @@ paths:
           description: No content
         '400':
           $ref: '#/components/responses/BadRequest'
+    patch:
+      summary: Update a like by comment ID. Open for [ME]
+      operationId: update-like-by-comment-id
+      security:
+        - JWT: []
+      tags:
+        - Comment
+        - Rating
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the comment to update like
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - LIKE
+                    - DISLIKE
+                  example: LIKE
+              required:
+                - type
+      responses:
+        '200':
+          $ref: '#/components/responses/RatingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
   /api/v1/files:
     post:
-      summary: Upload a file
+      summary: Upload a file. Open for [USER]
       operationId: upload-file
       security:
         - JWT: []
       tags:
         - File
       requestBody:
-        required: true
         content:
           multipart/form-data:
             schema:
+              type: object
               properties:
                 file:
-                  type: string
-                  format: binary
+                  type: array
+                  items:
+                    type: string
+                    format: binary
       responses:
         '201':
           $ref: '#/components/responses/FileResponse'
@@ -854,7 +1246,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/files/{id}:
     get:
-      summary: Get a file by ID
+      summary: Get a file by ID. Open for [ANYONE]
       operationId: get-file-by-id
       tags:
         - File
@@ -871,7 +1263,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Delete a file by ID
+      summary: Delete a file by ID. Open for [USER]
       operationId: delete-file-by-id
       security:
         - JWT: []
@@ -891,7 +1283,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/categories:
     get:
-      summary: Get all categories
+      summary: Get all categories. Open for [ANYONE]
       operationId: get-categories
       tags:
         - Category
@@ -908,6 +1300,12 @@ paths:
           description: Limit of items per page
           schema:
             type: number
+        - name: search
+          in: query
+          required: false
+          description: Search query
+          schema:
+            type: string
       responses:
         '200':
           description: Categories response
@@ -917,19 +1315,20 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Pagination'
                   - properties:
-                      data:
+                      items:
                         type: array
                         items:
                           $ref: '#/components/schemas/Category'
         '400':
           $ref: '#/components/responses/BadRequest'
     post:
-      summary: Create a category
+      summary: Create a category. Open for [ADMIN]
       operationId: create-category
       security:
         - JWT: []
       tags:
         - Category
+        - Admin
       requestBody:
         required: true
         content:
@@ -952,7 +1351,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
   /api/v1/categories/{id}:
     get:
-      summary: Get a category by ID
+      summary: Get a category by ID. Open for [ANYONE]
       operationId: get-category-by-id
       tags:
         - Category
@@ -969,12 +1368,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     patch:
-      summary: Update a category by ID
+      summary: Update a category by ID. Open for [ADMIN]
       operationId: update-category-by-id
       security:
         - JWT: []
       tags:
         - Category
+        - Admin
       parameters:
         - name: id
           in: path
@@ -1003,12 +1403,13 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
     delete:
-      summary: Delete a category by ID
+      summary: Delete a category by ID. Open for [ADMIN]
       operationId: delete-category-by-id
       security:
         - JWT: []
       tags:
         - Category
+        - Admin
       parameters:
         - name: id
           in: path
@@ -1019,29 +1420,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/CategoryResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-  /api/v1/categories/{id}/posts:
-    get:
-      summary: Get all posts by category ID
-      operationId: get-posts-by-category-id
-      tags:
-        - Post
-        - Category
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID of the category to get posts
-          schema:
-            $ref: '#/components/schemas/ID'
-      responses:
-        '200':
-          description: Posts response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedPosts'
         '400':
           $ref: '#/components/responses/BadRequest'
 components:
@@ -1097,15 +1475,7 @@ components:
       content:
         application/json:
           schema:
-            properties:
-              myLike:
-                $ref: '#/components/schemas/Rating'
-              likes:
-                type: number
-                example: 12
-              dislikes:
-                type: number
-                example: 2
+            $ref: '#/components/schemas/Rating'
     BadRequest:
       description: Bad Request
       content:
@@ -1133,7 +1503,7 @@ components:
     Pagination:
       type: object
       properties:
-        data:
+        items:
           type: array
           items:
             type: object
@@ -1175,7 +1545,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/Pagination'
         - properties:
-            data:
+            items:
               type: array
               items:
                 $ref: '#/components/schemas/Post'
@@ -1226,6 +1596,10 @@ components:
           type: string
           format: date-time
           example: '2021-09-01T12:00:00Z'
+        avatarId:
+          $ref: '#/components/schemas/ID'
+        avatar:
+          $ref: '#/components/schemas/File'
     File:
       type: object
       properties:
@@ -1247,6 +1621,10 @@ components:
         id:
           $ref: '#/components/schemas/ID'
         userId:
+          $ref: '#/components/schemas/ID'
+        postId:
+          $ref: '#/components/schemas/ID'
+        commentId:
           $ref: '#/components/schemas/ID'
         type:
           type: string
@@ -1290,7 +1668,12 @@ components:
           type: string
           format: date-time
           example: '2021-09-01T12:00:00Z'
-
+        _count:
+          type: object
+          properties:
+            comments:
+              type: number
+              example: 12
         pictures:
           type: array
           items:
@@ -1328,6 +1711,8 @@ components:
         content:
           type: string
           example: 'This is a comment'
+        parentId:
+          $ref: '#/components/schemas/ID'
         createdAt:
           type: string
           format: date-time

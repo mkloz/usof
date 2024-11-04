@@ -1,13 +1,13 @@
-import { categoryService } from './category.service';
-import { Helper } from '../utils/helpers/helper';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { IdDtoValidator } from '../shared/validators/common.validator';
+import { Helper } from '../utils/helpers/helper';
 import {
   CreateCategoryDtoValidator,
+  GetManyCategoryDtoValidator,
   UpdateCategoryDtoValidator,
 } from './category.dto';
-import { PaginationOptValidator } from '../shared/pagination/pagination-option.validator';
+import { categoryService } from './category.service';
 
 export class CategoryController {
   public static async get(req: Request, res: Response) {
@@ -25,25 +25,13 @@ export class CategoryController {
   }
 
   public static async getMany(req: Request, res: Response) {
-    const data = PaginationOptValidator.parse(req.query);
-    const comment = await categoryService.getMany(
+    const data = GetManyCategoryDtoValidator.parse(req.query);
+    const comment = await categoryService.getPaginated(
       data,
       Helper.getPathname(req),
     );
 
     res.status(StatusCodes.OK).json(comment);
-  }
-
-  public static async getPosts(req: Request, res: Response) {
-    const data = PaginationOptValidator.parse(req.query);
-    const { id } = IdDtoValidator.parse(req.params);
-    const posts = await categoryService.getPosts(
-      id,
-      data,
-      Helper.getPathname(req),
-    );
-
-    res.status(StatusCodes.OK).json(posts);
   }
 
   public static async update(req: Request, res: Response) {

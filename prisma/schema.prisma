@@ -105,7 +105,7 @@ enum PostStatus {
 model Post {
     id         Int        @id @default(autoincrement())
     title      String
-    content    String
+    content    String     @db.Text
     createdAt  DateTime   @default(now()) @map("created_at")
     updatedAt  DateTime   @updatedAt @map("updated_at")
     status     PostStatus @default(PUBLISHED)
@@ -124,7 +124,7 @@ model Post {
 model Category {
     id          Int      @id @default(autoincrement())
     name        String
-    description String?
+    description String?  @db.VarChar(5000)
     createdAt   DateTime @default(now()) @map("created_at")
     updatedAt   DateTime @updatedAt @map("updated_at")
     posts       Post[]   @relation("_post_category")
@@ -133,16 +133,19 @@ model Category {
 }
 
 model Comment {
-    id        Int      @id @default(autoincrement())
-    content   String
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
-    userId    Int      @map("user_id")
-    postId    Int      @map("post_id")
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    ratings   Rating[]
-    rating    Int?     @default(0)
+    id          Int       @id @default(autoincrement())
+    content     String    @db.VarChar(10000)
+    createdAt   DateTime  @default(now()) @map("created_at")
+    updatedAt   DateTime  @updatedAt @map("updated_at")
+    userId      Int       @map("user_id")
+    postId      Int       @map("post_id")
+    parentId    Int?      @map("parent_id")
+    user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    post        Post      @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    ratings     Rating[]
+    rating      Int?      @default(0)
+    parent      Comment?  @relation("subComments", fields: [parentId], references: [id])
+    subComments Comment[] @relation("subComments")
 
     @@map("comment")
 }

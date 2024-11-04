@@ -1,7 +1,7 @@
+import { prisma } from '@/db/prisma.client';
+import { UnprocessableEntityException } from '@/shared/exceptions/exceptions';
+import { Random } from '@/utils/helpers/random';
 import { OtpType, Prisma, PrismaClient } from '@prisma/client';
-import { Random } from '../../utils/helpers/random';
-import { UnprocessableEntityException } from '../../utils/exceptions/exceptions';
-import { prisma } from '../../db/prisma.client';
 
 export class OTPService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -23,14 +23,7 @@ export class OTPService {
         user: { email },
         code,
         type,
-        OR: [
-          {
-            activeTill: {
-              gte: new Date(),
-            },
-          },
-          { activeTill: null },
-        ],
+        OR: [{ activeTill: null }, { activeTill: { gt: new Date() } }],
       },
     });
 

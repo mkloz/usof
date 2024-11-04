@@ -1,7 +1,8 @@
-import { PostStatus, RatingType } from '@prisma/client';
+import { SortOrder } from '@/db/types';
+import { IDValidator } from '@/shared/validators/common.validator';
+import { PostStatus } from '@prisma/client';
 import { z } from 'zod';
 import { PaginationOptValidator } from '../shared/pagination/pagination-option.validator';
-import { SortOrder } from '../db/types';
 
 export const CreatePostDtoValidator = z.object({
   title: z.string().min(2),
@@ -12,25 +13,16 @@ export const CreatePostDtoValidator = z.object({
 });
 export type CreatePostDto = z.infer<typeof CreatePostDtoValidator>;
 
-export const UpdatePostDtoValidator = z.object({
-  title: z.string().min(2),
-  content: z.string().min(2),
-  status: z
-    .enum([PostStatus.PUBLISHED, PostStatus.DRAFT, PostStatus.PRIVATE])
-    .optional(),
-});
+export const UpdatePostDtoValidator = CreatePostDtoValidator.partial();
 export type UpdatePostDto = z.infer<typeof UpdatePostDtoValidator>;
-export const CreatePostLikeDtoValidator = z.object({
-  type: z.nativeEnum(RatingType),
-});
 
 export const GetManyPostsDtoValidator = PaginationOptValidator.extend({
-  categoryId: z.coerce.number().positive().optional(),
+  categoryId: IDValidator.optional(),
   status: z.enum([PostStatus.ARCHIVED, PostStatus.PUBLISHED]).optional(),
   fromDate: z.coerce.date().optional(),
   tillDate: z.coerce.date().optional(),
   search: z.string().optional(),
-  userId: z.coerce.number().positive().optional(),
+  userId: IDValidator.optional(),
   sortByLikes: z.nativeEnum(SortOrder).optional(),
   sortByDate: z.nativeEnum(SortOrder).optional(),
 });

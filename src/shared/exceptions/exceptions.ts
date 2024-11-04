@@ -1,6 +1,30 @@
 import { StatusCodes } from 'http-status-codes';
+import { z } from 'zod';
 
-export class HTTPException extends Error {
+const ErrorSchema = z.object({
+  message: z.string(),
+  name: z.string(),
+  stack: z.string().optional(),
+});
+const HTTPExceptionSchema = ErrorSchema.extend({
+  statusCode: z.number().min(400).max(599),
+  message: z.string(),
+});
+
+const ClientErrorExceptionSchema = HTTPExceptionSchema.extend({
+  statusCode: z.number().min(400).max(499),
+});
+const ServerErrorExceptionSchema = HTTPExceptionSchema.extend({
+  statusCode: z.number().min(500).max(599),
+});
+
+export class CustomError extends Error {
+  public static isError(err: unknown): err is Error {
+    return ErrorSchema.safeParse(err).success;
+  }
+}
+
+export class HTTPException extends CustomError {
   constructor(
     public statusCode: StatusCodes,
     message: string,
@@ -8,9 +32,19 @@ export class HTTPException extends Error {
     super(message);
     this.name = this.constructor.name;
   }
+
+  public static isHTTPException(err: unknown): err is HTTPException {
+    return ClientErrorExceptionSchema.safeParse(err).success;
+  }
 }
 
-export class ClientErrorException extends HTTPException {}
+export class ClientErrorException extends HTTPException {
+  public static isClientErrorException(
+    err: unknown,
+  ): err is ClientErrorException {
+    return ClientErrorExceptionSchema.safeParse(err).success;
+  }
+}
 
 export class BadRequestException extends ClientErrorException {
   constructor(message: string = 'Bad Request') {
@@ -125,7 +159,13 @@ export class UnprocessableEntityException extends ClientErrorException {
   }
 }
 
-export class ServerErrorException extends HTTPException {}
+export class ServerErrorException extends HTTPException {
+  public static isServerErrorException(
+    err: unknown,
+  ): err is ServerErrorException {
+    return ServerErrorExceptionSchema.safeParse(err).success;
+  }
+}
 
 export class InternalServerErrorException extends ServerErrorException {
   constructor(message: string = 'Internal Server Error') {

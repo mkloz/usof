@@ -1,4 +1,4 @@
-import { mailerService, MailerService } from '../../mailer/mailer.service';
+import { mailerService, MailerService } from '@/mailer/mailer.service';
 
 export class AuthMailService {
   constructor(private readonly mailerService: MailerService) {}

@@ -1,13 +1,15 @@
-import express, { Application } from 'express';
-import { ExceptionFilter } from './utils/exceptions/exception.filter';
+import { startScheduleService } from '@/db/schedule';
+import { limiter } from '@/shared/middlewares/rate-limiter';
 import cors from 'cors';
+import express, { Application } from 'express';
+import helmet from 'helmet';
+import { AppRouter } from './app.router';
+import OpenApiDocs from './docs/open-api-docs';
+import { ExceptionFilter } from './shared/exceptions/exception.filter';
+import { startupLogger } from './shared/loggers/logger';
+import { requestLogger } from './shared/loggers/request-logger.middleware';
 import { GLOBAL_PREFIX } from './utils/prefix/global-prefix';
 import { ApiVersion } from './utils/prefix/version-prefix.enum';
-import { AppRouter } from './app.router';
-import { requestLogger } from './shared/loggers/request-logger.middleware';
-import { startupLogger } from './shared/loggers/logger';
-import OpenApiDocs from './docs/open-api-docs';
-import { startScheduleService } from './db/schedule';
 
 export const DOCS_PATH = '/api/docs';
 
@@ -21,7 +23,10 @@ export class UsofServer {
   public static create(): Application {
     const app = express();
 
+    app.disable('x-powered-by');
+    app.use(limiter);
     app.use(cors());
+    app.use(helmet());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(requestLogger());

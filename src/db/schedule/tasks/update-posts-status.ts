@@ -14,6 +14,9 @@ export async function updatePostsStatus() {
           },
         },
       },
+      createdAt: {
+        lte: new Date(Date.now() - ONE_MONTH),
+      },
     },
     data: {
       status: PostStatus.ARCHIVED,

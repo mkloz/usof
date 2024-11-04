@@ -1,10 +1,10 @@
-import { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
-import { HTTPException, NotFoundException } from './exceptions';
-import { cs } from '../../config/api-config.service';
-import { Logger } from '../../shared/loggers/logger';
-import { ZodError, ZodIssue } from 'zod';
+import { cs } from '@/config/api-config.service';
+import { Logger } from '@/shared/loggers/logger';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { NextFunction, Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { ZodError, ZodIssue } from 'zod';
+import { CustomError, HTTPException, NotFoundException } from './exceptions';
 
 const formatZodIssue = (issue: ZodIssue): string => {
   const { path, message } = issue;
@@ -17,7 +17,7 @@ const formatZodIssue = (issue: ZodIssue): string => {
 
 export class ExceptionResponse {
   status: number;
-  message: unknown;
+  message: string;
   timestamp: string;
   method: string;
   path?: string;
@@ -37,7 +37,7 @@ export class ExceptionFilter {
   }
 
   public static handle(
-    err: ErrorRequestHandler,
+    err: unknown,
     req: Request,
     res: Response,
     next: NextFunction,
@@ -51,16 +51,16 @@ export class ExceptionFilter {
     });
 
     if (err) {
-      if (err instanceof HTTPException) {
+      if (HTTPException.isHTTPException(err)) {
         resp.status = err.statusCode;
         resp.message = err.message;
       } else if (err instanceof ZodError) {
-        resp.status = StatusCodes.UNPROCESSABLE_ENTITY;
+        resp.status = StatusCodes.BAD_REQUEST;
         resp.message = err.issues.map((err) => formatZodIssue(err)).join('; ');
       } else if (err instanceof PrismaClientKnownRequestError) {
         resp.status = StatusCodes.BAD_REQUEST;
         resp.message = err.message;
-      } else if (err instanceof Error) {
+      } else if (CustomError.isError(err)) {
         if (!cs.isProduction()) {
           resp.message = err.message;
         }

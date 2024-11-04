@@ -1,10 +1,14 @@
+import { admin } from '@/auth/middlewares/admin.middleware';
+import { auth } from '@/auth/middlewares/auth.middleware';
+import usersComment from '@/comment/middlewares/comment-belongs-to-user.middleware';
+import commentExist from '@/comment/middlewares/comment-exist.middleware';
+import { commentReactionRouter } from '@/comment/reaction/reaction.router';
+import { or } from '@/shared/middlewares/or';
 import { Router } from 'express';
 import { CommentController } from './comment.controller';
-import commentBelongsToUser from './middlewares/comment-belongs-to-user.middleware';
-import { auth } from '../auth/middlewares/auth.middleware';
-import commentExist from './middlewares/comment-exist.middleware';
 
 export const commentRouter = Router();
+const usersCommentOrAdmin = or(usersComment, admin);
 
 commentRouter
   .get('/comments/:id', commentExist, CommentController.get)
@@ -12,15 +16,13 @@ commentRouter
   .patch(
     '/comments/:id',
     commentExist,
-    commentBelongsToUser,
+    usersCommentOrAdmin,
     CommentController.update,
   )
   .delete(
     '/comments/:id',
     commentExist,
-    commentBelongsToUser,
+    usersCommentOrAdmin,
     CommentController.delete,
   )
-  .post('/comments/:id/like', auth, commentExist, CommentController.like)
-  .delete('/comments/:id/like', auth, commentExist, CommentController.unlike)
-  .get('/comments/:id/like', auth, commentExist, CommentController.getRating);
+  .use('/comments/:id', auth, commentExist, commentReactionRouter);

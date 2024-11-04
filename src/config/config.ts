@@ -1,7 +1,8 @@
+import { PasswordValidator } from '@/user/user.dto';
 import dotenv from 'dotenv';
+import { v4 as uuidV4 } from 'uuid';
 import { z } from 'zod';
 import { IApiConfig } from './api-config.service';
-import { v4 as uuidV4 } from 'uuid';
 
 export enum Env {
   DEVELOPMENT = 'development',
@@ -39,6 +40,11 @@ export const EnvSchema = z.object({
   MAIL_AUTH_PASS: z.string().min(2),
   MAIL_FROM_ADDRESS: z.string().min(2),
   MAIL_FROM_NAME: z.string().min(2),
+  THROTTLE_LIMIT: z.coerce.number().nonnegative().default(100),
+  THROTTLE_TTL: z.coerce.number().nonnegative().default(60),
+  ADMIN_EMAIL: z.string().email(),
+  ADMIN_PASSWORD: PasswordValidator,
+  ADMIN_NAME: z.string().min(2),
 });
 
 export class ConfigCreator {
@@ -98,6 +104,15 @@ export class ConfigCreator {
           secretAccessKey: env.AWS_S3_SECRET_ACCESS_KEY,
           bucketName: env.AWS_PUBLIC_BUCKET_NAME,
         },
+      },
+      throttle: {
+        limit: env.THROTTLE_LIMIT,
+        ttl: env.THROTTLE_TTL,
+      },
+      admin: {
+        email: env.ADMIN_EMAIL,
+        password: env.ADMIN_PASSWORD,
+        name: env.ADMIN_NAME,
       },
     };
   }

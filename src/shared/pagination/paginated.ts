@@ -1,17 +1,46 @@
-import { Helper } from '../../utils/helpers/helper';
-import { Paginated, PaginationLinks, PaginationMeta } from './paginated.dto';
-import { PaginationOptionsDto } from './pagination-options.dto';
-
+import { PaginationOptionsDto } from '@/shared/pagination';
+import { Helper } from '@/utils/helpers/helper';
+import {
+  ClassTransformOptions,
+  plainToClassFromExist,
+  Type,
+} from 'class-transformer';
 export interface IPag<TData> extends PaginationOptionsDto {
   data: TData[];
   count: number;
   route: string;
 }
 
-export class Paginator {
-  private static createMeta<TData extends object>(
+export class PaginationMeta {
+  itemCount: number;
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+}
+
+export class PaginationLinks {
+  first: string;
+  previous: string | null;
+  next: string | null;
+  last: string;
+}
+
+export class Paginated<TData extends object> {
+  items: TData[];
+  @Type(() => PaginationMeta)
+  meta: PaginationMeta;
+  @Type(() => PaginationLinks)
+  links: PaginationLinks;
+
+  constructor(
     opt: IPag<TData>,
-  ): PaginationMeta {
+    extraQuery?: Record<string, string | number | undefined | Date>,
+    options?: ClassTransformOptions,
+  ) {
+    plainToClassFromExist(this, this.paginate(opt, extraQuery), options);
+  }
+
+  private createMeta<TData extends object>(opt: IPag<TData>): PaginationMeta {
     return {
       itemCount: opt.count,
       totalItems: opt.data.length,
@@ -20,7 +49,7 @@ export class Paginator {
     };
   }
 
-  private static createLinks<TData extends object>(
+  private createLinks<TData extends object>(
     opt: IPag<TData>,
     extraQuery?: Record<string, string | number | undefined | Date>,
   ): PaginationLinks {
@@ -41,14 +70,14 @@ export class Paginator {
     };
   }
 
-  public static paginate<TData extends object>(
+  private paginate<TData extends object>(
     opt: IPag<TData>,
     extraQuery?: Record<string, string | number | undefined | Date>,
-  ): Paginated<TData> {
+  ) {
     return {
       items: opt.data,
-      links: Paginator.createLinks(opt, extraQuery),
-      meta: Paginator.createMeta(opt),
+      links: this.createLinks(opt, extraQuery),
+      meta: this.createMeta(opt),
     };
   }
 }

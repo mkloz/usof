@@ -1,10 +1,10 @@
-import { fileService } from './file.service';
+import { parseAuthToken } from '@/auth/middlewares/admin.middleware';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import { UnprocessableEntityException } from '../shared/exceptions/exceptions';
 import { IdDtoValidator } from '../shared/validators/common.validator';
-import { parseAuthToken } from '../auth/middlewares/auth.middleware';
 import { fileS3Service } from './file-upload.service';
-import { UnprocessableEntityException } from '../utils/exceptions/exceptions';
+import { fileService } from './file.service';
 
 export class FileController {
   public static async get(req: Request, res: Response) {

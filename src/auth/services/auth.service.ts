@@ -1,8 +1,8 @@
+import { NotFoundException } from '@/shared/exceptions/exceptions';
+import { userService, UserService } from '@/user/user.service';
 import { OtpType } from '@prisma/client';
-import { otpService, OTPService } from './otp.service';
-import { userService, UserService } from '../../user/user.service';
 import { authMailService, AuthMailService } from './auth-mail.service';
-import { NotFoundException } from '../../utils/exceptions/exceptions';
+import { otpService, OTPService } from './otp.service';
 export const TEN_MINUTES = 1000 * 60 * 10;
 
 export class AuthService {
@@ -57,7 +57,7 @@ export class AuthService {
     const user = await this.userService.get({ email });
 
     await this.otpService.verify(email, code, OtpType.PASSWORD_RESET);
-    await this.userService.update(user.id, { password });
+    await this.userService.updatePassword(user.id, password);
   }
 }
 

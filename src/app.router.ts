@@ -1,12 +1,14 @@
+import { authRouter } from '@/auth/auth.router';
+import { commentRouter } from '@/comment/comment.router';
+import { fileRouter } from '@/file/file.router';
+import { postRouter } from '@/post/post.router';
 import { Request, Response, Router } from 'express';
-import { userRouter } from './user/user.router';
-import { authRouter } from './auth/auth.router';
-import { startupLogger } from './shared/loggers/logger';
-import StringHelper from './utils/helpers/string';
-import { postRouter } from './post/post.router';
-import { commentRouter } from './comment/comment.router';
 import { StatusCodes } from 'http-status-codes';
 import { DOCS_PATH } from './app';
+import { categoryRouter } from './category/category.router';
+import { startupLogger } from './shared/loggers/logger';
+import { userRouter } from './user/user.router';
+import StringHelper from './utils/helpers/string';
 
 export class AppRouter {
   public static routersV1: Record<string, Router> = {
@@ -14,6 +16,8 @@ export class AppRouter {
     authRouter,
     postRouter,
     commentRouter,
+    fileRouter,
+    categoryRouter,
   };
 
   static greeting(_req: Request, res: Response) {

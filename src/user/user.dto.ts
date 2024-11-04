@@ -1,3 +1,5 @@
+import { IDValidator } from '@/shared/validators/common.validator';
+import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 
 export const PasswordValidator = z
@@ -17,14 +19,25 @@ export const CreateUserDtoValidator = z.object({
 });
 export type CreateUserDto = z.infer<typeof CreateUserDtoValidator>;
 
-export const UpdateUserDtoValidator = z.object({
+export const UpdateMeDtoValidator = z.object({
   fullName: z.string().min(2).optional(),
-  password: PasswordValidator.optional(),
-  avatarId: z.number().int().positive().optional().nullable(),
+  avatarId: IDValidator.optional().nullable(),
 });
+export type UpdateMeDto = z.infer<typeof UpdateMeDtoValidator>;
+
+export const UpdateUserDtoValidator = UpdateMeDtoValidator.extend({
+  role: z.nativeEnum(UserRole).optional(),
+});
+
 export type UpdateUserDto = z.infer<typeof UpdateUserDtoValidator>;
+export const UpdatePasswordDtoValidator = z.object({
+  oldPassword: PasswordValidator,
+  newPassword: PasswordValidator,
+});
+
+export type UpdatePasswordDto = z.infer<typeof UpdatePasswordDtoValidator>;
 
 export const MakePostFavoriteDtoValidator = z.object({
-  postId: z.number().int().positive(),
+  postId: IDValidator,
 });
 export type MakePostFavoriteDto = z.infer<typeof MakePostFavoriteDtoValidator>;

@@ -38,6 +38,17 @@ export interface IMail {
     address: string;
   };
 }
+export interface IThrottle {
+  limit: number;
+  ttl: number;
+}
+
+export interface IAdmin {
+  email: string;
+  password: string;
+  name: string;
+}
+
 export interface IApiConfig {
   env: string;
   port: number;
@@ -46,6 +57,8 @@ export interface IApiConfig {
   jwt: IJWTConfig;
   aws: IAWS;
   mail: IMail;
+  throttle: IThrottle;
+  admin: IAdmin;
 }
 
 export class ApiConfigService {
@@ -99,6 +112,14 @@ export class ApiConfigService {
 
   public getMail(): IMail {
     return this.config.mail;
+  }
+
+  public getThrottle(): IThrottle {
+    return this.config.throttle;
+  }
+
+  public getAdmin(): IAdmin {
+    return this.config.admin;
   }
 }
 

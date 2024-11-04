@@ -1,13 +1,13 @@
-import { NextFunction, Request, Response } from 'express';
-import { parseAuthToken } from '../../auth/middlewares/auth.middleware';
-import { IdDtoValidator } from '../../shared/validators/common.validator';
-import { commentService } from '../comment.service';
+import { parseAuthToken } from '@/auth/middlewares/admin.middleware';
 import {
   NotFoundException,
   UnprocessableEntityException,
-} from '../../utils/exceptions/exceptions';
+} from '@/shared/exceptions/exceptions';
+import { IdDtoValidator } from '@/shared/validators/common.validator';
+import { NextFunction, Request, Response } from 'express';
+import { commentService } from '../comment.service';
 
-export default async function commentBelongsToUser(
+export default async function usersComment(
   req: Request,
   _: Response,
   next: NextFunction,

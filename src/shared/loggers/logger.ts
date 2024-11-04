@@ -1,5 +1,5 @@
-import { Instance as ChalkInstance, Chalk } from 'chalk';
-import { cs } from '../../config/api-config.service';
+import { cs } from '@/config/api-config.service';
+import { Chalk, Instance as ChalkInstance } from 'chalk';
 
 export enum LogLevel {
   INFO = 'INFO',
@@ -27,9 +27,9 @@ export class Logger {
         ERROR: color.red,
       }[level.toUpperCase()] || color.reset;
 
-    const srting = `${lc(color`{blue [${timestamp}]} [${level}] {yellow [APP]} {blue [${this.context}]}: ${message}`)}`;
+    const string = `${lc(color`{blue [${timestamp}]} [${level}] {yellow [APP]} {blue [${this.context}]}: ${message}`)}`;
 
-    console.log(srting);
+    console.log(string);
   }
 
   info(message: string) {

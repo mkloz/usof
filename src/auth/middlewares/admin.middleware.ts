@@ -1,8 +1,8 @@
+import { ForbiddenException } from '@/shared/exceptions/exceptions';
+import { userService } from '@/user/user.service';
 import { NextFunction, Request, Response } from 'express';
-import { JwtAuthService, jwtService } from '../jwt/jwt.service';
 import { JwtAuthPayload } from '../jwt/jwt-payload.dto';
-import { userService } from '../../user/user.service';
-import { ForbiddenException } from '../../utils/exceptions/exceptions';
+import { JwtAuthService, jwtService } from '../jwt/jwt.service';
 
 export async function admin(req: Request, _res: Response, next: NextFunction) {
   const payload = parseAuthToken(req);

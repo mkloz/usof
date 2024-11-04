@@ -1,6 +1,6 @@
+import { cs } from '@/config/api-config.service';
 import { Request } from 'express';
 import { format } from 'url';
-import { cs } from '../../config/api-config.service';
 
 export class Helper {
   private static instance: Helper;

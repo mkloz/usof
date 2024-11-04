@@ -1,5 +1,5 @@
+import { cs } from '@/config/api-config.service';
 import logger from 'morgan';
-import { cs } from '../../config/api-config.service';
 import { Logger } from './logger';
 
 export function requestLogger() {

@@ -1,9 +1,14 @@
-import { PostStatus } from '@prisma/client';
-import { Post as IPost } from '@prisma/client';
-import { Comment } from '../comment/comment.entity';
-import { User } from '../user/user.entity';
+import { Comment } from '@/comment/comment.entity';
+import { File } from '@/file/file.entity';
+import { Paginated } from '@/shared/pagination';
+import { Post as IPost, PostStatus } from '@prisma/client';
+import {
+  ClassTransformOptions,
+  plainToClassFromExist,
+  Type,
+} from 'class-transformer';
 import { Category } from '../category/category.entity';
-import { File } from '../file/file.entity';
+import { User } from '../user/user.entity';
 
 export class Post implements IPost {
   id: number;
@@ -15,32 +20,22 @@ export class Post implements IPost {
   updatedAt: Date;
   rating: number | null;
 
+  @Type(() => User)
   author?: User | null;
+  @Type(() => Comment)
   comments?: Comment[];
+  @Type(() => Category)
   categories?: Category[];
+  @Type(() => File)
   pictures?: File[];
 
-  constructor(data: Partial<Post>) {
-    Object.assign(this, data);
+  _count?: Record<string, number>;
 
-    if (this.comments?.length) {
-      this.comments = this.comments.map((comment) => new Comment(comment));
-    }
-
-    if (this.author) {
-      this.author = new User(this.author);
-    }
-
-    if (this.categories?.length) {
-      this.categories = this.categories.map(
-        (category) => new Category(category),
-      );
-    }
-
-    if (this.pictures?.length) {
-      this.pictures = data.pictures?.map((picture) => {
-        return new File(picture);
-      });
-    }
+  constructor(data: Post, options?: ClassTransformOptions) {
+    plainToClassFromExist(this, data, options);
   }
+}
+export class PaginatedPosts extends Paginated<Post> {
+  @Type(() => Post)
+  items: Post[];
 }

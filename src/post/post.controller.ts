@@ -1,20 +1,22 @@
-import { postService } from './post.service';
-import { Helper } from '../utils/helpers/helper';
+import { parseAuthToken } from '@/auth/middlewares/auth.middleware';
+import { CreateCommentDtoValidator } from '@/comment/comment.dto';
+import { commentService } from '@/comment/comment.service';
+import { PostStatus } from '@prisma/client';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { IdDtoValidator } from '../shared/validators/common.validator';
+import { BadRequestException } from '../shared/exceptions/exceptions';
+import { PaginationOptValidator } from '../shared/pagination/pagination-option.validator';
+import {
+  IdDtoValidator,
+  IDValidator,
+} from '../shared/validators/common.validator';
+import { Helper } from '../utils/helpers/helper';
 import {
   CreatePostDtoValidator,
-  CreatePostLikeDtoValidator,
   GetManyPostsDtoValidator,
   UpdatePostDtoValidator,
 } from './post.dto';
-import { PaginationOptValidator } from '../shared/pagination/pagination-option.validator';
-import { parseAuthToken } from '../auth/middlewares/auth.middleware';
-import { CreateCommentDtoValidator } from '../comment/comment.dto';
-import { commentService } from '../comment/comment.service';
-import { BadRequestException } from '../utils/exceptions/exceptions';
-import { PostStatus } from '@prisma/client';
+import { postService } from './post.service';
 
 export class PostController {
   public static async get(req: Request, res: Response) {
@@ -32,7 +34,7 @@ export class PostController {
     res.status(StatusCodes.CREATED).json(post);
   }
 
-  public static async comment(req: Request, res: Response) {
+  public static async createComment(req: Request, res: Response) {
     const data = CreateCommentDtoValidator.parse(req.body);
     const { userId } = parseAuthToken(req);
     const { id } = IdDtoValidator.parse(req.params);
@@ -43,24 +45,15 @@ export class PostController {
     }
     const comment = await commentService.create(userId, id, data);
 
+    if (!comment) {
+      throw new BadRequestException('Comment not created');
+    }
     res.status(StatusCodes.CREATED).json(comment);
   }
 
   public static async getMany(req: Request, res: Response) {
     const data = GetManyPostsDtoValidator.parse(req.query);
-    const posts = await postService.getMany(data, Helper.getPathname(req));
-
-    res.status(StatusCodes.OK).json(posts);
-  }
-
-  public static async getComments(req: Request, res: Response) {
-    const data = PaginationOptValidator.parse(req.query);
-    const { id } = IdDtoValidator.parse(req.params);
-    const posts = await postService.getComments(
-      id,
-      data,
-      Helper.getPathname(req),
-    );
+    const posts = await postService.getPaginated(data, Helper.getPathname(req));
 
     res.status(StatusCodes.OK).json(posts);
   }
@@ -68,13 +61,31 @@ export class PostController {
   public static async getCategories(req: Request, res: Response) {
     const data = PaginationOptValidator.parse(req.query);
     const { id } = IdDtoValidator.parse(req.params);
-    const posts = await postService.getCategories(
+    const posts = await postService.getPaginatedCategories(
       id,
       data,
       Helper.getPathname(req),
     );
 
     res.status(StatusCodes.OK).json(posts);
+  }
+
+  public static async addCategory(req: Request, res: Response) {
+    const { id, categoryId } = IdDtoValidator.extend({
+      categoryId: IDValidator,
+    }).parse(req.params);
+    const post = await postService.addCategory(id, categoryId);
+
+    res.status(StatusCodes.OK).json(post);
+  }
+
+  public static async removeCategory(req: Request, res: Response) {
+    const { id, categoryId } = IdDtoValidator.extend({
+      categoryId: IDValidator,
+    }).parse(req.params);
+    const post = await postService.removeCategory(id, categoryId);
+
+    res.status(StatusCodes.OK).json(post);
   }
 
   public static async update(req: Request, res: Response) {
@@ -90,31 +101,5 @@ export class PostController {
     const post = await postService.delete(id);
 
     res.status(StatusCodes.OK).json(post);
-  }
-
-  public static async like(req: Request, res: Response) {
-    const { id } = IdDtoValidator.parse(req.params);
-    const { userId } = parseAuthToken(req);
-
-    const data = CreatePostLikeDtoValidator.parse(req.body);
-    const comment = await postService.createRating(id, userId, data.type);
-
-    res.status(StatusCodes.CREATED).json(comment);
-  }
-
-  public static async unlike(req: Request, res: Response) {
-    const { id } = IdDtoValidator.parse(req.params);
-    const { userId } = parseAuthToken(req);
-    await postService.deleteRating(id, userId);
-
-    res.status(StatusCodes.NO_CONTENT).end();
-  }
-
-  public static async getRating(req: Request, res: Response) {
-    const { id } = IdDtoValidator.parse(req.params);
-    const { userId } = parseAuthToken(req);
-    const rating = await postService.getRating(id, userId);
-
-    res.status(StatusCodes.OK).json(rating);
   }
 }

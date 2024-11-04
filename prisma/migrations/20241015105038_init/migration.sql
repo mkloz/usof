@@ -57,7 +57,7 @@ CREATE TABLE `rating` (
 CREATE TABLE `post` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(191) NOT NULL,
-    `content` VARCHAR(191) NOT NULL,
+    `content` TEXT NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
     `status` ENUM('DRAFT', 'PUBLISHED', 'ARCHIVED', 'PRIVATE') NOT NULL DEFAULT 'PUBLISHED',
@@ -71,7 +71,7 @@ CREATE TABLE `post` (
 CREATE TABLE `category` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
-    `description` VARCHAR(191) NULL,
+    `description` VARCHAR(5000) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
 
@@ -81,7 +81,7 @@ CREATE TABLE `category` (
 -- CreateTable
 CREATE TABLE `comment` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `content` VARCHAR(191) NOT NULL,
+    `content` VARCHAR(10000) NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
     `user_id` INTEGER NOT NULL,

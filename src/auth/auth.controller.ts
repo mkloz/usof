@@ -1,4 +1,13 @@
+import { authService } from '@/auth/services/auth.service';
+import { prisma } from '@/db/prisma.client';
 import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import {
+  BadRequestException,
+  ConflictException,
+  UnprocessableEntityException,
+} from '../shared/exceptions/exceptions';
+import { userService } from '../user/user.service';
 import {
   LoginDtoValidator,
   RegisterDtoValidator,
@@ -7,23 +16,15 @@ import {
   TokenDtoValidator,
   VerifyEmailDtoValidator,
 } from './auth.dto';
-import { UserService, userService } from '../user/user.service';
-import {
-  ConflictException,
-  UnprocessableEntityException,
-} from '../utils/exceptions/exceptions';
 import { jwtService } from './jwt/jwt.service';
-import { StatusCodes } from 'http-status-codes';
-import { authService } from './services/auth.service';
-import { prisma } from '../db/prisma.client';
 
 export class AuthController {
   public static async login(req: Request, res: Response) {
     const dto = LoginDtoValidator.parse(req.body);
     const user = await prisma.user.findUnique({ where: { email: dto.email } });
 
-    if (!user || !UserService.compare(dto.password, user.passwordHash || '')) {
-      throw new UnprocessableEntityException('Invalid data provided');
+    if (!user || !userService.verify(user.id, dto.password)) {
+      throw new BadRequestException('Invalid email or password');
     }
 
     if (!user.emailVerified) {
@@ -40,8 +41,15 @@ export class AuthController {
     const userFromDB = await userService.getSafe({ email: dto.email });
 
     if (userFromDB) {
-      throw new ConflictException('User was already registered');
+      if (!userFromDB.emailVerified) {
+        await authService.sendEmailVerification(userFromDB.email);
+        throw new ConflictException(
+          'User was already registered. Verification email was sent',
+        );
+      }
+      throw new BadRequestException('User was already registered');
     }
+
     const user = await userService.create(dto);
 
     if (!user) {
@@ -69,7 +77,6 @@ export class AuthController {
 
   public static async verifyEmail(req: Request, res: Response) {
     const { email, code } = VerifyEmailDtoValidator.parse(req.body);
-
     await authService.verifyEmail(email, code);
 
     res.status(StatusCodes.NO_CONTENT).end();

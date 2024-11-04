@@ -1,37 +1,46 @@
-import { Post } from './post.entity';
+import { prisma } from '@/db/prisma.client';
 import {
+  Rating as IRating,
   PostStatus,
   Prisma,
   PrismaClient,
-  Rating,
   RatingType,
 } from '@prisma/client';
-import {
-  Paginated,
-  PaginationOptionsDto,
-  Paginator,
-} from '../shared/pagination';
-import { prisma } from '../db/prisma.client';
+import { Category, PaginatedCategories } from '../category/category.entity';
 import {
   InternalServerErrorException,
   NotFoundException,
-} from '../utils/exceptions/exceptions';
+} from '../shared/exceptions/exceptions';
+import { Paginated, PaginationOptionsDto } from '../shared/pagination';
 import { CreatePostDto, GetManyPostsDto, UpdatePostDto } from './post.dto';
+import { PaginatedPosts, Post } from './post.entity';
 
-class PostRating {
-  myLike?: Rating | null;
-  likes: number;
-  dislikes: number;
+export class Rating implements IRating {
+  id: number;
+  createdAt: Date;
+  type: RatingType;
+  userId: number;
+  postId: number | null;
+  commentId: number | null;
 
-  constructor(comment: Partial<PostRating>) {
+  constructor(comment: Partial<Rating>) {
     Object.assign(this, comment);
   }
 }
 
 export class PostService {
   static readonly include: Prisma.PostInclude = {
-    author: true,
+    author: {
+      include: {
+        avatar: true,
+      },
+    },
     pictures: true,
+    _count: {
+      select: {
+        comments: true,
+      },
+    },
   };
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -56,6 +65,8 @@ export class PostService {
           ? [
               { title: { contains: pag.search } },
               { content: { contains: pag.search } },
+              { author: { fullName: { contains: pag.search } } },
+              { categories: { some: { name: { contains: pag.search } } } },
             ]
           : undefined,
       },
@@ -71,58 +82,38 @@ export class PostService {
     };
   }
 
-  async getMany(
+  async getPaginated(
     { page, limit, ...pag }: GetManyPostsDto,
     url: string,
   ): Promise<Paginated<Post>> {
     const query = this.getManyQuery({ page, limit, ...pag });
     const posts = await this.prisma.post.findMany(query);
 
-    return Paginator.paginate(
+    return new PaginatedPosts(
       {
-        data: posts.map((task) => new Post(task)),
+        data: posts,
         page: page,
         limit: limit,
         route: url,
-        count: await this.prisma.post.count(),
+        count: await this.prisma.post.count({ where: query.where }),
       },
       pag,
     );
   }
 
-  async getComments(
+  async getPaginatedCategories(
     postId: number,
     pag: PaginationOptionsDto,
     url: string,
-  ): Promise<Paginated<Post>> {
-    const comments = await this.prisma.comment.findMany({
-      take: pag.limit,
-      where: { postId },
-      skip: (pag.page - 1) * pag.limit,
-    });
-
-    return Paginator.paginate({
-      data: comments.map((task) => new Post(task)),
-      page: pag.page,
-      limit: pag.limit,
-      route: url,
-      count: await this.prisma.comment.count({ where: { postId } }),
-    });
-  }
-
-  async getCategories(
-    postId: number,
-    pag: PaginationOptionsDto,
-    url: string,
-  ): Promise<Paginated<Post>> {
+  ): Promise<Paginated<Category>> {
     const categories = await this.prisma.category.findMany({
       take: pag.limit,
       where: { posts: { some: { id: postId } } },
       skip: (pag.page - 1) * pag.limit,
     });
 
-    return Paginator.paginate({
-      data: categories.map((task) => new Post(task)),
+    return new PaginatedCategories({
+      data: categories,
       page: pag.page,
       limit: pag.limit,
       route: url,
@@ -130,6 +121,42 @@ export class PostService {
         where: { posts: { some: { id: postId } } },
       }),
     });
+  }
+
+  async addCategory(postId: number, categoryId: number): Promise<Post> {
+    const post = await this.prisma.post.update({
+      where: { id: postId },
+      include: PostService.include,
+      data: {
+        categories: {
+          connect: { id: categoryId },
+        },
+      },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post does not exist.');
+    }
+
+    return new Post(post);
+  }
+
+  async removeCategory(postId: number, categoryId: number): Promise<Post> {
+    const post = await this.prisma.post.update({
+      where: { id: postId },
+      include: PostService.include,
+      data: {
+        categories: {
+          disconnect: { id: categoryId },
+        },
+      },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post does not exist.');
+    }
+
+    return new Post(post);
   }
 
   async update(id: number, dto: UpdatePostDto): Promise<Post> {
@@ -182,50 +209,6 @@ export class PostService {
     }
 
     return new Post(post);
-  }
-
-  async getRating(postId: number, userId: number): Promise<PostRating> {
-    const myLike = await this.prisma.rating.findFirst({
-      where: { userId, postId },
-    });
-    const likes = await this.prisma.rating.count({
-      where: { postId, type: RatingType.LIKE },
-    });
-    const dislikes = await this.prisma.rating.count({
-      where: { postId, type: RatingType.DISLIKE },
-    });
-
-    return new PostRating({ myLike, likes, dislikes });
-  }
-
-  async createRating(
-    postId: number,
-    userId: number,
-    type: RatingType,
-  ): Promise<PostRating> {
-    const myLike = await this.prisma.rating.create({
-      data: {
-        userId,
-        postId,
-        type,
-      },
-    });
-
-    if (!myLike) {
-      throw new InternalServerErrorException('Cant rate post.');
-    }
-
-    return this.getRating(postId, userId);
-  }
-
-  async deleteRating(postId: number, userId: number): Promise<void> {
-    const myLike = await this.prisma.rating.deleteMany({
-      where: { userId, postId },
-    });
-
-    if (!myLike || myLike.count === 0) {
-      throw new InternalServerErrorException('Cant delete post rate.');
-    }
   }
 }
 

@@ -1,10 +1,10 @@
-import { File } from './file.entity';
+import { prisma } from '@/db/prisma.client';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { prisma } from '../db/prisma.client';
 import {
   InternalServerErrorException,
   NotFoundException,
-} from '../utils/exceptions/exceptions';
+} from '../shared/exceptions/exceptions';
+import { File } from './file.entity';
 
 export class FileService {
   constructor(private readonly prisma: PrismaClient) {}

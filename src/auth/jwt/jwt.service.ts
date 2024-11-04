@@ -1,9 +1,9 @@
-import jwt from 'jsonwebtoken';
-import { ApiConfigService, IJWTConfig } from '../../config/api-config.service';
-import { Tokens } from './tokens.dto';
-import { JwtAuthPayload, JwtAuthPayloadValidator } from './jwt-payload.dto';
+import { ApiConfigService, IJWTConfig } from '@/config/api-config.service';
+import { UnauthorizedException } from '@/shared/exceptions/exceptions';
 import { Request } from 'express';
-import { UnauthorizedException } from '../../utils/exceptions/exceptions';
+import jwt from 'jsonwebtoken';
+import { JwtAuthPayload, JwtAuthPayloadValidator } from './jwt-payload.dto';
+import { Tokens } from './tokens.dto';
 
 export class JwtAuthService {
   constructor(private readonly jwtConfig: IJWTConfig) {}

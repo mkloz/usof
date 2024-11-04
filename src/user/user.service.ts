@@ -1,29 +1,25 @@
-import { User } from './user.entity';
-import { Prisma, PrismaClient, Rating } from '@prisma/client';
-import { prisma } from '../db/prisma.client';
+import { Comment, PaginatedComments } from '@/comment/comment.entity';
+import { prisma } from '@/db/prisma.client';
+import { PaginatedPosts } from '@/post/post.entity';
+import { PostService } from '@/post/post.service';
+import { PaginatedUsers } from '@/user/user.entity';
+import { Post, Prisma, PrismaClient, Rating, User } from '@prisma/client';
+import { compareSync, hashSync } from 'bcryptjs';
 import {
   InternalServerErrorException,
   NotFoundException,
-} from '../utils/exceptions/exceptions';
-import { compareSync, hashSync } from 'bcryptjs';
+} from '../shared/exceptions/exceptions';
+import { Paginated, PaginationOptionsDto } from '../shared/pagination';
 import { CreateUserDto, UpdateUserDto } from './user.dto';
-import {
-  Paginated,
-  PaginationOptionsDto,
-  Paginator,
-} from '../shared/pagination';
-import { Post } from '../post/post.entity';
-import { Comment } from '../comment/comment.entity';
-import { PostService } from '../post/post.service';
 
 export class UserService {
-  readonly include: Prisma.UserInclude = {
+  static include: Prisma.UserInclude = {
     avatar: true,
   };
 
   constructor(private readonly prisma: PrismaClient) {}
 
-  async getPosts(
+  async getPaginatedPosts(
     userId: number,
     pag: PaginationOptionsDto,
     url: string,
@@ -31,11 +27,12 @@ export class UserService {
     const posts = await this.prisma.post.findMany({
       where: { authorId: userId },
       take: pag.limit,
+      include: PostService.include,
       skip: (pag.page - 1) * pag.limit,
     });
 
-    return Paginator.paginate({
-      data: posts.map((task) => new Post(task)),
+    return new PaginatedPosts({
+      data: posts,
       page: pag.page,
       limit: pag.limit,
       route: url,
@@ -43,7 +40,7 @@ export class UserService {
     });
   }
 
-  async getComments(
+  async getPaginatedComments(
     userId: number,
     pag: PaginationOptionsDto,
     url: string,
@@ -55,8 +52,8 @@ export class UserService {
       skip: (pag.page - 1) * pag.limit,
     });
 
-    return Paginator.paginate({
-      data: comments.map((task) => new Comment(task)),
+    return new PaginatedComments({
+      data: comments,
       page: pag.page,
       limit: pag.limit,
       route: url,
@@ -71,40 +68,58 @@ export class UserService {
     });
   }
 
-  async update(
-    userId: number,
-    { password, ...dto }: UpdateUserDto,
-  ): Promise<User> {
+  async updatePassword(userId: number, password: string): Promise<User> {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      include: this.include,
-      data: {
-        ...dto,
-        passwordHash: password ? UserService.hash(password) : undefined,
-      },
+      data: { passwordHash: UserService.hash(password) },
+      include: UserService.include,
+    });
+
+    if (!user) {
+      throw new NotFoundException('User does not exist.');
+    }
+
+    return user;
+  }
+
+  async update(userId: number, dto: UpdateUserDto): Promise<User> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      include: UserService.include,
+      data: dto,
     });
     if (!user) {
       throw new NotFoundException('User does not exist.');
     }
 
-    return new User(user);
+    return user;
   }
 
   async delete(id: number): Promise<User> {
     const user = await this.prisma.user.delete({
       where: { id },
-      include: this.include,
+      include: UserService.include,
     });
 
     if (!user) {
       throw new NotFoundException('User does not exist.');
     }
 
-    return new User(user);
+    return user;
   }
 
   public static compare(pass: string, hash: string): boolean {
     return compareSync(pass, hash);
+  }
+
+  public verify(userId: number, pass: string, hashed?: boolean): boolean {
+    const passwordHash = hashed ? pass : UserService.hash(pass);
+
+    const user = this.prisma.user.findUnique({
+      where: { id: userId, passwordHash },
+    });
+
+    return !!user;
   }
 
   public static hash(string: string): string {
@@ -113,7 +128,7 @@ export class UserService {
 
   async create({ password, ...dto }: CreateUserDto): Promise<User> {
     const user = await this.prisma.user.create({
-      include: this.include,
+      include: UserService.include,
       data: {
         ...dto,
         passwordHash: UserService.hash(password),
@@ -124,29 +139,48 @@ export class UserService {
       throw new InternalServerErrorException('Cant create user.');
     }
 
-    return new User(user);
+    return user;
   }
 
   async get(where: Prisma.UserWhereUniqueInput): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where,
-      include: this.include,
+      include: UserService.include,
     });
 
     if (!user) {
       throw new NotFoundException('User does not exist.');
     }
 
-    return new User(user);
+    return user;
+  }
+
+  async getPaginated(
+    pag: PaginationOptionsDto,
+    route: string,
+  ): Promise<PaginatedUsers> {
+    const users = await this.prisma.user.findMany({
+      take: pag.limit,
+      skip: (pag.page - 1) * pag.limit,
+      include: UserService.include,
+    });
+
+    return new PaginatedUsers({
+      data: users,
+      page: pag.page,
+      limit: pag.limit,
+      route: route,
+      count: await this.prisma.user.count(),
+    });
   }
 
   async getSafe(where: Prisma.UserWhereUniqueInput): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where,
-      include: this.include,
+      include: UserService.include,
     });
 
-    return user ? new User(user) : null;
+    return user ? user : null;
   }
 
   async verifyEmail(email: string): Promise<void> {
@@ -155,7 +189,12 @@ export class UserService {
       data: { emailVerified: true },
     });
   }
-  async getLikes(userId: number): Promise<Rating[]> {
+
+  async count(): Promise<number> {
+    return this.prisma.user.count();
+  }
+
+  async getReactions(userId: number): Promise<Rating[]> {
     return this.prisma.rating.findMany({
       where: { userId },
     });
@@ -172,7 +211,7 @@ export class UserService {
       throw new NotFoundException('Post does not exist.');
     }
 
-    return new Post(post);
+    return post;
   }
 
   async removeFavorite(userId: number, postId: number): Promise<Post> {
@@ -186,7 +225,7 @@ export class UserService {
       throw new NotFoundException('Post does not exist.');
     }
 
-    return new Post(post);
+    return post;
   }
 }
 

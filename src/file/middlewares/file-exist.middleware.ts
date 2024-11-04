@@ -1,7 +1,7 @@
+import { prisma } from '@/db/prisma.client';
+import { NotFoundException } from '@/shared/exceptions/exceptions';
+import { IdDtoValidator } from '@/shared/validators/common.validator';
 import { NextFunction, Request, Response } from 'express';
-import { IdDtoValidator } from '../../shared/validators/common.validator';
-import { NotFoundException } from '../../utils/exceptions/exceptions';
-import { prisma } from '../../db/prisma.client';
 
 export default async function fileExist(
   req: Request,
