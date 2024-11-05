@@ -42,7 +42,10 @@
 > -   [📍 Overview](#-overview)
 > -   [🚀 Getting Started](#-getting-started)
 >     -   [⚙️ Installation](#️-installation)
+>     -   [🗄️ Database Setup](#️-database-setup)
 >     -   [🤖 Running USOF](#-running-USOF)
+> -   [📜 Swagger Documentation](#-swagger-documentation)
+> -   [🗄️ Database Schema](#️-database-schema)
 > -   [🤝 Contributing](#-contributing)
 > -   [📄 License](#-license)
 
@@ -111,6 +114,21 @@ Use the following command to run the USOF application:
 ```sh
 npm run build && nmp run start
 ```
+
+---
+
+## 📜 Swagger Documentation
+
+To view the Swagger documentation for the USOF API, follow these steps:
+
+1. Ensure the USOF application is running.
+2. Open your web browser and navigate to `http://localhost:3000/api/docs`.
+
+This will open the Swagger UI, where you can explore and test the API endpoints interactively.
+
+Alternatively, you can view the OpenAPI YAML documentation by navigating to `/docs` folder.
+
+--
 
 ## 🗄️ Database Schema
 
