@@ -1,6 +1,4 @@
-import { cs } from '@/config/api-config.service';
 import { Request } from 'express';
-import { format } from 'url';
 
 export class Helper {
   private static instance: Helper;
@@ -14,16 +12,6 @@ export class Helper {
 
   static getInstance() {
     return Helper.instance;
-  }
-
-  static getFullUrl(req: Request) {
-    const [pathname] = req.originalUrl.split('?');
-
-    return format({
-      protocol: req.protocol,
-      host: cs.getHost(),
-      pathname: pathname,
-    });
   }
 
   static getPathname(req: Request) {

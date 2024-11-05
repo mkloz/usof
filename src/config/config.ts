@@ -19,7 +19,6 @@ export const EnvSchema = z.object({
   JWT_ACCESS_TOKEN_TIME: z.string().default('30m'),
   JWT_REFRESH_TOKEN_SECRET: z.string().min(6).default(uuidV4()),
   JWT_REFRESH_TOKEN_TIME: z.string().default('7d'),
-  SELF_HOST: z.string().min(2),
   DB_PORT: z.coerce.number().nonnegative().min(0).max(65535),
   DB_HOST: z.string().min(2),
   DB_PASS: z.string().min(2),
@@ -66,7 +65,6 @@ export class ConfigCreator {
     return {
       env: env.NODE_ENV,
       port: env.PORT,
-      host: env.SELF_HOST,
       jwt: {
         accessToken: {
           secret: env.JWT_ACCESS_TOKEN_SECRET,

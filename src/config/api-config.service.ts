@@ -52,7 +52,6 @@ export interface IAdmin {
 export interface IApiConfig {
   env: string;
   port: number;
-  host: string;
   database: IMysqlConfig;
   jwt: IJWTConfig;
   aws: IAWS;
@@ -80,10 +79,6 @@ export class ApiConfigService {
 
   public getPort() {
     return this.config.port;
-  }
-
-  public getHost() {
-    return this.config.host;
   }
 
   public isDevelopment(): boolean {

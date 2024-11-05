@@ -76,6 +76,34 @@ cd usof-backend
 npm install
 ```
 
+4. Create a `.env` file in the root directory and add environment variables like in `.env.example` file.
+
+### 🗄️ Database Setup
+
+1. Create a `.env` file in the root directory and add your database connection string:
+
+    ```env
+    DATABASE_URL="mysql://user:password@localhost:3306/usof"
+    ```
+
+2. Run the following command to apply database migrations:
+
+    ```sh
+    npm run migrate
+    ```
+
+3. Seed the database with initial data:
+
+    ```sh
+    npm run seed
+    ```
+
+4. Verify the database connection and data:
+
+    ```sh
+    npm run prisma:studio
+    ```
+
 ### 🤖 Running USOF
 
 Use the following command to run the USOF application:
@@ -83,6 +111,16 @@ Use the following command to run the USOF application:
 ```sh
 npm run build && nmp run start
 ```
+
+## 🗄️ Database Schema
+
+The database schema is defined using Prisma. Below is a visual representation of the schema:
+
+<p align="center">
+    <img src="prisma/db.png" alt="Database Schema" width="600" />
+</p>
+
+---
 
 ## 🤝 Contributing
 
