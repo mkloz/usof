@@ -96,9 +96,9 @@ export class UserController {
   }
 
   public static async update(req: Request, res: Response) {
-    const { userId } = parseAuthToken(req);
+    const { id } = IdDtoValidator.parse(req.params);
     const data = UpdateUserDtoValidator.parse(req.body);
-    const user = await userService.update(userId, data);
+    const user = await userService.update(id, data);
 
     res.status(StatusCodes.OK).json(new User(user));
   }
