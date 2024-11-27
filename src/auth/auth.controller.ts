@@ -7,7 +7,7 @@ import {
   ConflictException,
   UnprocessableEntityException,
 } from '../shared/exceptions/exceptions';
-import { userService } from '../user/user.service';
+import { UserService, userService } from '../user/user.service';
 import {
   LoginDtoValidator,
   RegisterDtoValidator,
@@ -23,8 +23,12 @@ export class AuthController {
     const dto = LoginDtoValidator.parse(req.body);
     const user = await prisma.user.findUnique({ where: { email: dto.email } });
 
-    if (!user || !userService.verify(user.id, dto.password)) {
-      throw new BadRequestException('Invalid email or password');
+    if (!user) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    if (!UserService.compare(dto.password, user.passwordHash)) {
+      throw new BadRequestException('Invalid password');
     }
 
     if (!user.emailVerified) {

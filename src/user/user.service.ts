@@ -112,10 +112,10 @@ export class UserService {
     return compareSync(pass, hash);
   }
 
-  public verify(userId: number, pass: string, hashed?: boolean): boolean {
+  public async verify(userId: number, pass: string, hashed?: boolean) {
     const passwordHash = hashed ? pass : UserService.hash(pass);
 
-    const user = this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId, passwordHash },
     });
 
