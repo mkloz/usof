@@ -108,7 +108,7 @@ export class UserController {
     const { oldPassword, newPassword } = UpdatePasswordDtoValidator.parse(
       req.body,
     );
-    if (!userService.verify(userId, oldPassword)) {
+    if (!(await userService.verify(userId, oldPassword))) {
       throw new NotFoundException('Invalid old password');
     }
 
